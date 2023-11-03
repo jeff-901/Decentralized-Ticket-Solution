@@ -1,0 +1,11 @@
+# Compile 
+Compile all the solidity files under `contracts` folder
+```
+truffle compile
+```
+
+# Deploy
+Run all the migration scripts under `migrations` folder to deploy solidity into goerli testnet
+```
+truffle migrate --network goerli
+```
