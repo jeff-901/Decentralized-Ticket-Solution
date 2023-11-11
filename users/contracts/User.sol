@@ -39,6 +39,10 @@ contract User {
     function add_ticket(address ticket) public {
         tickets.push(ticket);
         amount_tickets += 1;
+
+        // new reputation_score
+        newscore = 5 + get_reputation_score();
+        update_repuation_score(newscore);
     }
 
     function delete_ticket(address ticket) public {
