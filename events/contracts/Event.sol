@@ -11,6 +11,11 @@ contract Event {
     uint256[] public prices;
     address[] public seat_owners;
     uint256 public seed;
+    uint256 public presale_start_time;
+    uint256 public presale_end_time;
+    uint256 public event_start_time;
+    uint256 public event_end_time;
+    address[] public lottery_pool;
 
 	constructor(
         address _owner,
@@ -18,7 +23,11 @@ contract Event {
         string memory _description,
         string memory _link,
         uint256[] memory _seats,
-		uint256[] memory _prices
+		uint256[] memory _prices,
+        uint256 _presale_start_time,
+        uint256 _presale_end_time,
+        uint256 _event_start_time,
+        uint256 _event_end_time
     ) {
         owner = _owner;
 		name = _name;
@@ -27,6 +36,10 @@ contract Event {
 		seats = _seats;
         prices = _prices;
         seat_owners = new address[](seats.length);
+        presale_start_time = _presale_start_time;
+        presale_end_time = _presale_end_time;
+        event_start_time = _event_start_time;
+        event_end_time = _event_end_time;
 	}
 
     // Check if the specified ticket seat is owned by a given user
@@ -37,24 +50,32 @@ contract Event {
         return seat_owners[seatNumber] == user;
     }
 
-	//TODO: not sure what to do with this function
-	function check_balance(address event1) public view returns (uint256) {
-	}
+	// Check if a user has sufficient funds to buy a ticket
+	function check_balance(uint256 seatNumber, address user) public view returns (bool) {
+        uint256 price = prices[seatNumber];
+        return address(user).balance >= price;
+    }
 
-    function buy_ticket(uint256 seatNumber) public payable {
-        require(seatNumber < seats.length, "Invalid seat number");
-        require(seat_owners[seatNumber] == address(0), "Seat is already taken");
-        require(msg.value >= prices[seatNumber], "Insufficient funds");
-
-        // Transfer ownership of the seat
-        seat_owners[seatNumber] = msg.sender;
-
-        // Emit an event to signal the ticket purchase
+    // During the presale stage if the user has sufficient funds, place the ticket in the lottery pool
+    // Collect the money and place the ticket in the lottery pool
+    // The ticket is placed in the lottery pool by adding the user's address to the array of addresses.
+    function buy_ticket(uint256 seatNumber, address user) public payable {
+        require(block.timestamp >= presale_start_time, "Presale has not started yet");
+        require(block.timestamp < presale_start_time, "Presale has closed");   
+        // 1. Check if the user has sufficient funds to buy the ticket
+        require(check_balance(seatNumber, user), "Insufficient funds");
+        // 2. Place the user address in the lottery pool
+        lottery_pool.push(user);
+        // 3. Transfer tje ,pmey from the buyer to the contract owner
+        uint256 price = prices[seatNumber];
+        payable(owner).transfer(price);
+        // 4. Emit an event to signal the ticket purchase
         emit OnTicketPurchased(msg.sender, seatNumber, msg.value);
     }
 	// Contract owner withdraws the entire balance from the contract and sends it to a specified user address
 	function withdraw(address payable user) public {
 		require(msg.sender == owner);
+        require (block.timestamp > event_end_time, "Withdrawal is not allowed yet");
         user.transfer(address(this).balance);
     }
 }
