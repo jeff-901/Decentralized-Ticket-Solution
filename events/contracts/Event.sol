@@ -66,7 +66,7 @@ contract Event {
         require(check_balance(seatNumber, user), "Insufficient funds");
         // 2. Place the user address in the lottery pool
         lottery_pool.push(user);
-        // 3. Transfer tje ,pmey from the buyer to the contract owner
+        // 3. Transfer the money from the buyer to the contract owner
         uint256 price = prices[seatNumber];
         payable(owner).transfer(price);
         // 4. Emit an event to signal the ticket purchase
