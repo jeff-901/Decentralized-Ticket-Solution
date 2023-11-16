@@ -10,7 +10,7 @@ contract Event {
     uint256[] public seats;
     uint256[] public prices;
     address[] public seat_owners;
-    uint256 public seed;
+    mapping(address => uint256) public user_to_seatNumber;
     uint256 public presale_start_time;
     uint256 public presale_end_time;
     uint256 public event_start_time;
@@ -58,7 +58,7 @@ contract Event {
 
     // During the presale stage if the user has sufficient funds, place the ticket in the lottery pool
     // Collect the money and place the ticket in the lottery pool
-    // The ticket is placed in the lottery pool by adding the user's address to the array of addresses.
+    // The ticket is placed in the lottery pool by adding the user's address to the array of addresses
     function buy_ticket(uint256 seatNumber, address user) public payable {
         require(block.timestamp >= presale_start_time, "Presale has not started yet");
         require(block.timestamp < presale_start_time, "Presale has closed");   
@@ -69,13 +69,68 @@ contract Event {
         // 3. Transfer the money from the buyer to the contract owner
         uint256 price = prices[seatNumber];
         payable(owner).transfer(price);
-        // 4. Emit an event to signal the ticket purchase
+        // 4. Update the user and seat price mapping
+        user_to_seatNumber[user] = seatNumber;
+        // 5. Emit an event to signal the ticket purchase
         emit OnTicketPurchased(msg.sender, seatNumber, msg.value);
     }
+
 	// Contract owner withdraws the entire balance from the contract and sends it to a specified user address
 	function withdraw(address payable user) public {
 		require(msg.sender == owner);
         require (block.timestamp > event_end_time, "Withdrawal is not allowed yet");
         user.transfer(address(this).balance);
+    }
+
+    // User cancels their registration and gets a refund
+    function cancel_registration(address user) public {
+        require(block.timestamp < event_start_time, "Event has already started");
+
+        // If the user is in the lottery pool, they can cancel their registration and get a refund
+        for (uint256 i = 0; i < lottery_pool.length; i++) {
+            if (lottery_pool[i] == user) {
+                uint256 seatNumber = user_to_seatNumber[user];
+                uint256 price = prices[seatNumber];
+                require(address(this).balance >= price, "Contract balance insufficient");
+                // Remove the user from the lottery pool
+                lottery_pool[i] = address(0);
+                // Transfer the money from the contract to the user
+                payable(user).transfer(price);
+                // Remove the user's registration
+                delete user_to_seatNumber[user];
+
+                break;
+            }
+        }
+    }
+
+    //  Distribute the tickets to the users in the lottery pool based on the length of seats
+    function distribute_ticket(uint256 seed) public {
+        require(block.timestamp > presale_end_time, "Presale has not ended yet");
+        require(msg.sender == owner, "Only the contract owner can distribute tickets");
+        uint256 offset = seed % lottery_pool.length;
+        // Distribute the tickets to the users in the lottery pool based on the length of seats
+        //FIXME: How to deal with tickets of multiple prices?
+        uint256 j = 0;
+        while (j < seats.length) {
+            uint256 index = (offset + j) % lottery_pool.length;
+            address userToAssign = lottery_pool[index];
+            if (userToAssign != address(0)) {
+                uint256 seatNumber = seats[j];
+                seat_owners[seatNumber] = userToAssign;
+                // Set the user's seat number to 0 to indicate that they have been assigned a seat
+                lottery_pool[index] = address(0);
+                j += 1;
+            }
+        }
+        // Refund the remaining users in the lottery pool
+        for (uint256 i = 0; i < lottery_pool.length; i++) {
+            if (lottery_pool[i] != address(0)) {
+                uint seatNumber = user_to_seatNumber[lottery_pool[i]];
+                uint256 price = prices[seatNumber];
+                payable(lottery_pool[i]).transfer(price);
+                delete lottery_pool[i];
+            }
+        }
     }
 }
