@@ -90,6 +90,7 @@ contract Event {
         require(block.timestamp < event_start_time, "Event has already started");
 
         // If the user is in the lottery pool, they can cancel their registration and get a refund
+        bool found = false;
         for(uint256 i = 0; i < seats.length; i++){
             for (uint256 j = 0; j < lottery_pool[i].length; j++) {
                 if (lottery_pool[i][j] == user) {
@@ -99,8 +100,12 @@ contract Event {
                     lottery_pool[i][j] = address(0);
                     // Transfer the money from the contract to the user
                     payable(user).transfer(price);
+                    found = true;
                     break;
                 }
+            }
+            if (found) {
+                break;
             }
         }
     }
