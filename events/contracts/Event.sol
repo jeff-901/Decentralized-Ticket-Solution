@@ -1,21 +1,20 @@
 pragma solidity >=0.8.0;
 
 contract Event {
-    event OnTicketPurchased(address buyer, uint256 seatNumber, uint256 price);
+    event OnTicketPurchased(address buyer, uint256 price);
 
     address public owner;
     string public name;
     string public description;
     string public link;
-    uint256[] public seats;
-    uint256[] public prices;
+    uint256[] public prices; // prices are all the possible values of tickets
+    uint256[] public seats; // prices[i] has seats[i] tickets
     address[] public seat_owners;
-    mapping(address => uint256) public user_to_seatNumber;
     uint256 public presale_start_time;
     uint256 public presale_end_time;
     uint256 public event_start_time;
     uint256 public event_end_time;
-    address[] public lottery_pool;
+    address[][] public lottery_pool;  // lottery_pool[i][j] means the j-th user register the prices[i] ticket
 
 	constructor(
         address _owner,
@@ -40,6 +39,10 @@ contract Event {
         presale_end_time = _presale_end_time;
         event_start_time = _event_start_time;
         event_end_time = _event_end_time;
+
+        for(uint256 i = 0; i < seats.length; i++) {
+            lottery_pool.push(new address[](0));
+        }
 	}
 
     // Check if the specified ticket seat is owned by a given user
@@ -51,28 +54,28 @@ contract Event {
     }
 
 	// Check if a user has sufficient funds to buy a ticket
-	function check_balance(uint256 seatNumber, address user) public view returns (bool) {
-        uint256 price = prices[seatNumber];
+	function check_balance(uint256 price, address user) public view returns (bool) {
         return address(user).balance >= price;
     }
 
     // During the presale stage if the user has sufficient funds, place the ticket in the lottery pool
     // Collect the money and place the ticket in the lottery pool
     // The ticket is placed in the lottery pool by adding the user's address to the array of addresses
-    function buy_ticket(uint256 seatNumber, address user) public payable {
+    function buy_ticket(uint256 price, address user) public payable {
         require(block.timestamp >= presale_start_time, "Presale has not started yet");
         require(block.timestamp < presale_start_time, "Presale has closed");   
         // 1. Check if the user has sufficient funds to buy the ticket
-        require(check_balance(seatNumber, user), "Insufficient funds");
+        require(check_balance(price, user), "Insufficient funds");
         // 2. Place the user address in the lottery pool
-        lottery_pool.push(user);
+        for (uint256 i = 0; i < prices.length; i++) {
+            if (prices[i] == price) {
+                lottery_pool[i].push(user);
+            }
+        }
         // 3. Transfer the money from the buyer to the contract owner
-        uint256 price = prices[seatNumber];
         payable(owner).transfer(price);
-        // 4. Update the user and seat price mapping
-        user_to_seatNumber[user] = seatNumber;
-        // 5. Emit an event to signal the ticket purchase
-        emit OnTicketPurchased(msg.sender, seatNumber, msg.value);
+        // 4. Emit an event to signal the ticket purchase
+        emit OnTicketPurchased(msg.sender, price);
     }
 
 	// Contract owner withdraws the entire balance from the contract and sends it to a specified user address
@@ -87,19 +90,17 @@ contract Event {
         require(block.timestamp < event_start_time, "Event has already started");
 
         // If the user is in the lottery pool, they can cancel their registration and get a refund
-        for (uint256 i = 0; i < lottery_pool.length; i++) {
-            if (lottery_pool[i] == user) {
-                uint256 seatNumber = user_to_seatNumber[user];
-                uint256 price = prices[seatNumber];
-                require(address(this).balance >= price, "Contract balance insufficient");
-                // Remove the user from the lottery pool
-                lottery_pool[i] = address(0);
-                // Transfer the money from the contract to the user
-                payable(user).transfer(price);
-                // Remove the user's registration
-                delete user_to_seatNumber[user];
-
-                break;
+        for(uint256 i = 0; i < seats.length; i++){
+            for (uint256 j = 0; j < lottery_pool[i].length; j++) {
+                if (lottery_pool[i][j] == user) {
+                    uint256 price = prices[i];
+                    require(address(this).balance >= price, "Contract balance insufficient");
+                    // Remove the user from the lottery pool
+                    lottery_pool[i][j] = address(0);
+                    // Transfer the money from the contract to the user
+                    payable(user).transfer(price);
+                    break;
+                }
             }
         }
     }
@@ -108,28 +109,31 @@ contract Event {
     function distribute_ticket(uint256 seed) public {
         require(block.timestamp > presale_end_time, "Presale has not ended yet");
         require(msg.sender == owner, "Only the contract owner can distribute tickets");
-        uint256 offset = seed % lottery_pool.length;
+
         // Distribute the tickets to the users in the lottery pool based on the length of seats
-        //FIXME: How to deal with tickets of multiple prices?
-        uint256 j = 0;
-        while (j < seats.length) {
-            uint256 index = (offset + j) % lottery_pool.length;
-            address userToAssign = lottery_pool[index];
-            if (userToAssign != address(0)) {
-                uint256 seatNumber = seats[j];
-                seat_owners[seatNumber] = userToAssign;
-                // Set the user's seat number to 0 to indicate that they have been assigned a seat
-                lottery_pool[index] = address(0);
-                j += 1;
+        for (uint256 i = 0; i < seats.length; i++) {
+            uint256 offset = seed % lottery_pool[i].length;
+            // select seats[i] winners starting from offset in the lottery pool
+            uint256 selected = 0;
+            uint256 j = 0;
+            while (selected < seats[i]) {
+                uint256 winner_idx = (offset + j) % lottery_pool[i].length;
+                address winner = lottery_pool[i][winner_idx];
+                if (winner != address(0)) {
+                    seat_owners[i] = winner;
+                    selected++;
+                }
+                j++;
             }
         }
         // Refund the remaining users in the lottery pool
-        for (uint256 i = 0; i < lottery_pool.length; i++) {
-            if (lottery_pool[i] != address(0)) {
-                uint seatNumber = user_to_seatNumber[lottery_pool[i]];
-                uint256 price = prices[seatNumber];
-                payable(lottery_pool[i]).transfer(price);
-                delete lottery_pool[i];
+        for(uint256 i = 0; i < seats.length; i++) {
+            for(uint256 j = 0; j < lottery_pool[i].length; j++) {
+                if (lottery_pool[i][j] != address(0)) {
+                    uint256 price = prices[i];
+                    payable(lottery_pool[i][j]).transfer(price);
+                    lottery_pool[i][j] = address(0);
+                }
             }
         }
     }
