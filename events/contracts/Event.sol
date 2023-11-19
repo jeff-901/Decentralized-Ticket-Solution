@@ -1,7 +1,11 @@
 pragma solidity >=0.8.0;
 
+import "./UserController.sol";
+
 contract Event {
     event OnTicketPurchased(address buyer, uint256 price);
+
+    UserController public userController;
 
     address public owner;
     string public name;
@@ -127,6 +131,8 @@ contract Event {
                 if (winner != address(0)) {
                     seat_owners[i] = winner;
                     selected++;
+                    int256 new_reputation_score = userController.get_user_reputation_score(winner) + 5;
+                    userController.update_reputation_score(winner, new_reputation_score);
                 }
                 j++;
             }
