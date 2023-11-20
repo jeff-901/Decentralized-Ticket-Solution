@@ -5,8 +5,10 @@ contract EventController {
     mapping(address => Event) public address_to_event;
     address owner;
     Event[] public events;
+    address userController;
 
-    constructor() {
+    constructor(address _userController) {
+        userController = _userController;
         owner = msg.sender; 
     }
 
@@ -21,7 +23,7 @@ contract EventController {
         uint256 _event_start_time,
         uint256 _event_end_time
     ) public {
-        Event eventInstance = new Event(owner, _name, _description, _link, _seats, _prices, _presale_start_time, _presale_end_time, _event_start_time, _event_end_time);
+        Event eventInstance = new Event(owner, _name, _description, _link, _seats, _prices, _presale_start_time, _presale_end_time, _event_start_time, _event_end_time, userController);
         address event_address = address(eventInstance);
         address_to_event[event_address] = eventInstance;
     }
@@ -37,5 +39,4 @@ contract EventController {
         }
         return eventList;
     }
-
 }
