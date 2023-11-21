@@ -2,7 +2,6 @@ pragma solidity >=0.8.0;
 import "./User.sol";
 contract UserController {
     mapping (address => address) wallet_to_user;
-    address reputation_system;
     address owner;
 
     constructor() {

@@ -51,17 +51,19 @@ contract Event {
             // init NFT ticket
         }
 	}
+    
+    receive() external payable {}
 
     // Check if the specified ticket seat is owned by a given user
     function check_ticket_ownership(uint256 seatNumber, uint256 price, address user) public view returns (bool) {
-        uint256 target = seats.length;
-        for(uint256 i = 0; i < seats.length; i++) {
-            if (seats[i] == price){
+        uint256 target = prices.length;
+        for(uint256 i = 0; i < prices.length; i++) {
+            if (prices[i] == price){
                 target = i;
                 break;
             }
         }
-        require(target < seats.length, "price not found");
+        require(target < prices.length, "price not found");
         require(seatNumber < seats[target], "Seat does not exist");
         require(seat_owners[target][seatNumber] != address(0), "Seat is not owned");
 
@@ -78,17 +80,21 @@ contract Event {
     // The ticket is placed in the lottery pool by adding the user's address to the array of addresses
     function buy_ticket(uint256 price) public payable {
         require(block.timestamp >= presale_start_time, "Presale has not started yet");
-        require(block.timestamp < presale_start_time, "Presale has closed");   
+        require(block.timestamp < presale_end_time, "Presale has closed");   
         // 1. Check if the user has sufficient funds to buy the ticket
         require(check_balance(price, msg.sender), "Insufficient funds");
         // 2. Place the user address in the lottery pool
+        uint256 target = prices.length;
         for (uint256 i = 0; i < prices.length; i++) {
             if (prices[i] == price) {
-                lottery_pool[i].push(msg.sender);
+                target = i;
+                break;
             }
         }
+        require(target < prices.length, "price not found");
+        lottery_pool[target].push(msg.sender);
         // 3. Transfer the money from the buyer to the contract owner
-        payable(owner).transfer(price);
+        payable(address(this)).transfer(price);
         // 4. Emit an event to signal the ticket purchase
         emit OnTicketPurchased(msg.sender, price);
     }
@@ -102,7 +108,7 @@ contract Event {
 
     // User cancels their registration and gets a refund
     function cancel_registration() public {
-        require(block.timestamp < event_start_time, "Event has already started");
+        require(block.timestamp < presale_end_time, "Presale stage has already ended");
 
         // If the user is in the lottery pool, they can cancel their registration and get a refund
         bool found = false;
@@ -147,6 +153,7 @@ contract Event {
                     selected++;
                     int256 new_reputation_score = userController.get_user_reputation_score(winner) + 5;
                     userController.update_reputation_score(winner, new_reputation_score);
+                    userController.add_user_ticket(winner, seat_owners[i][selected]);
                 }else{
                     if (lottery_pool[i][j] != address(0)) {
                         uint256 price = prices[i];
