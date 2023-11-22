@@ -1,11 +1,13 @@
 pragma solidity >=0.8.0;
 
 import "./UserController.sol";
+import "./Ticket.sol"; //import Ticket NFT Smart Contract
 
 contract Event {
     event OnTicketPurchased(address buyer, uint256 price);
 
     UserController public userController;
+    Ticket public ticketContract;
 
     address public owner;
     string public name;
@@ -31,9 +33,11 @@ contract Event {
         uint256 _presale_end_time,
         uint256 _event_start_time,
         uint256 _event_end_time,
-        address _userController
+        address _userController,
+        address _ticketContract
     ) {
         userController = UserController(_userController);
+        ticketContract = Ticket(_ticketContract);
         owner = _owner;
 		name = _name;
         description = _description;
@@ -49,6 +53,7 @@ contract Event {
             lottery_pool.push(new address[](0));
             seat_owners.push(new address[](seats[i]));
             // init NFT ticket
+            ticketContract.mint(owner,i,i,name);
         }
 	}
     
@@ -154,6 +159,7 @@ contract Event {
                     int256 new_reputation_score = userController.get_user_reputation_score(winner) + 5;
                     userController.update_reputation_score(winner, new_reputation_score);
                     userController.add_user_ticket(winner, seat_owners[i][selected]);
+                    ticketContract.transferTicketOwnership(i, winner); //addition
                 }else{
                     if (lottery_pool[i][j] != address(0)) {
                         uint256 price = prices[i];
