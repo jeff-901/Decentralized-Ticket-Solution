@@ -6,25 +6,29 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 
 contract Ticket is ERC721Enumerable, Ownable {
     struct TicketMetadata {
-        uint256 ticketID;
         string eventName;
+        uint256 price;
+        address eventID;
     }
 
     // Mapping from token ID to ticket metadata
     mapping(uint256 => TicketMetadata) private _ticketMetadata;
 
-    constructor(string memory name, string memory symbol) ERC721(name, symbol) {}
+    constructor(string memory name, string memory symbol, address initialOwner) 
+    ERC721(name, symbol) Ownable(initialOwner){}
 
     function mint(
         address to,
         uint256 tokenId,
-        uint256 ticketID,
-        string memory eventName
+        string memory eventName,
+        uint256 price,
+        address eventID
     ) public onlyOwner {
         _mint(to, tokenId);
         TicketMetadata storage metadata = _ticketMetadata[tokenId];
-        metadata.ticketID = ticketID;
         metadata.eventName = eventName;
+        metadata.eventID = eventID;
+        metadata.price = price;
     }
 
     // Retrieve ticket metadata for a given token ID
@@ -32,14 +36,16 @@ contract Ticket is ERC721Enumerable, Ownable {
         public
         view
         returns (
-            uint256 ticketID,
-            string memory eventName
+            string memory eventName,
+            uint256 price,
+            address eventID
         )
     {
         TicketMetadata storage metadata = _ticketMetadata[tokenId];
         return (
-            metadata.ticketID,
-            metadata.eventName
+            metadata.eventName,
+            metadata.price,
+            metadata.eventID
         );
     }
 

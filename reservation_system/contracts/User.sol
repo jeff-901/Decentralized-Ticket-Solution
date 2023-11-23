@@ -1,10 +1,15 @@
 pragma solidity >=0.8.0;
+struct TicketShort {
+    address nft;
+    uint256 tokenID;
+}
 
 contract User {
     // event OnAddCampaign(address user, address capmaign_addr, uint256 Id);
     // event OnAddTicket(address user, address attend_addr, uint256 Id);
     // event OnCompleteCampaign(address user, address capmaign_addr, uint256 Id);
     // event OnCompleteTicket(address user, address attend_addr, uint256 Id);
+    
 
     address public user_controller;
     address private original_user_wallet;
@@ -12,7 +17,7 @@ contract User {
     string name;
     uint256 amount_tickets = 0;
     uint256 amount_events = 0;
-    address[] tickets;
+    TicketShort[] tickets;
     address[] events;
 
     constructor(address user_wallet, string memory name_arg) public {
@@ -31,20 +36,20 @@ contract User {
         return reputation_score;
     }
 
-    function get_tickets() public view returns (address[] memory){
+    function get_tickets() public view returns (TicketShort[] memory){
         require(msg.sender == user_controller || msg.sender == original_user_wallet);
         return tickets;
     }
 
-    function add_ticket(address ticket) public {
-        tickets.push(ticket);
+    function add_ticket(address nft, uint256 tokenID) public {
+        tickets.push(TicketShort(nft, tokenID));
         amount_tickets += 1;
     }
 
-    function delete_ticket(address ticket) public {
+    function delete_ticket(address nft, uint256 tokenID) public {
         for(uint256 idx = 0; idx < amount_tickets; idx++) {
-            if (tickets[idx] == ticket) {
-                tickets[idx] = address(0);
+            if ((tickets[idx].nft == nft) && (tickets[idx].tokenID == tokenID)) {
+                tickets[idx].nft = address(0);
             }
         }
     }

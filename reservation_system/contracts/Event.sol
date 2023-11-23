@@ -1,8 +1,10 @@
 pragma solidity >=0.8.0;
 
 import "./UserController.sol";
-import "./Ticket.sol"; //import Ticket NFT Smart Contract
-
+import "./Ticket.sol";
+// interface TicketController{
+//     function createTicket (string memory name, string memory symbol, address initialOwner) external returns (address);
+// }
 contract Event {
     event OnTicketPurchased(address buyer, uint256 price);
 
@@ -33,11 +35,10 @@ contract Event {
         uint256 _presale_end_time,
         uint256 _event_start_time,
         uint256 _event_end_time,
-        address _userController,
-        address _ticketContract
+        address _userController
     ) {
         userController = UserController(_userController);
-        ticketContract = Ticket(_ticketContract);
+
         owner = _owner;
 		name = _name;
         description = _description;
@@ -52,15 +53,17 @@ contract Event {
         for(uint256 i = 0; i < seats.length; i++) {
             lottery_pool.push(new address[](0));
             seat_owners.push(new address[](seats[i]));
-            // init NFT ticket
-            ticketContract.mint(owner,i,i,name);
         }
 	}
+
+    function setNFT(address ticketNFT) public {
+        require(msg.sender == owner);
+        ticketContract = Ticket(ticketNFT);
+    }
     
     receive() external payable {}
 
-    // Check if the specified ticket seat is owned by a given user
-    function check_ticket_ownership(uint256 seatNumber, uint256 price, address user) public view returns (bool) {
+    function price_to_idx(uint256 price) private view returns (uint256){
         uint256 target = prices.length;
         for(uint256 i = 0; i < prices.length; i++) {
             if (prices[i] == price){
@@ -69,11 +72,16 @@ contract Event {
             }
         }
         require(target < prices.length, "price not found");
-        require(seatNumber < seats[target], "Seat does not exist");
-        require(seat_owners[target][seatNumber] != address(0), "Seat is not owned");
-
-        return seat_owners[target][seatNumber] == user;
+        return target;
     }
+
+    // Check if the specified ticket seat is owned by a given user
+    // function check_ticket_ownership(uint256 seatNumber, uint256 price, address user) public view returns (bool) {
+    //     uint256 idx = price_to_idx(price);
+    //     require(seatNumber < seats[idx], "Seat does not exist");
+    //     require(seat_owners[idx][seatNumber] != address(0), "Seat is not owned");
+    //     return seat_owners[idx][seatNumber] == user;
+    // }
 
 	// Check if a user has sufficient funds to buy a ticket
 	function check_balance(uint256 price, address user) public view returns (bool) {
@@ -89,15 +97,8 @@ contract Event {
         // 1. Check if the user has sufficient funds to buy the ticket
         require(check_balance(price, msg.sender), "Insufficient funds");
         // 2. Place the user address in the lottery pool
-        uint256 target = prices.length;
-        for (uint256 i = 0; i < prices.length; i++) {
-            if (prices[i] == price) {
-                target = i;
-                break;
-            }
-        }
-        require(target < prices.length, "price not found");
-        lottery_pool[target].push(msg.sender);
+        uint256 idx = price_to_idx(price);
+        lottery_pool[idx].push(msg.sender);
         // 3. Transfer the money from the buyer to the contract owner
         payable(address(this)).transfer(price);
         // 4. Emit an event to signal the ticket purchase
@@ -112,26 +113,18 @@ contract Event {
     }
 
     // User cancels their registration and gets a refund
-    function cancel_registration() public {
+    function cancel_registration(uint256 price) public {
         require(block.timestamp < presale_end_time, "Presale stage has already ended");
 
         // If the user is in the lottery pool, they can cancel their registration and get a refund
-        bool found = false;
-        for(uint256 i = 0; i < seats.length; i++){
-            for (uint256 j = 0; j < lottery_pool[i].length; j++) {
-                if (lottery_pool[i][j] == msg.sender) {
-                    uint256 price = prices[i];
-                    require(address(this).balance >= price, "Contract balance insufficient");
-                    // Remove the user from the lottery pool
-                    lottery_pool[i][j] = address(0);
-                    // Transfer the money from the contract to the user
-                    payable(msg.sender).transfer(price);
-                    found = true;
-                    break;
-                }
-            }
-            if (found) {
-                break;
+        uint256 idx = price_to_idx(price);
+        for (uint256 j = 0; j < lottery_pool[idx].length; j++) {
+            if (lottery_pool[idx][j] == msg.sender) {
+                require(address(this).balance >= price, "Contract balance insufficient");
+                // Remove the user from the lottery pool
+                lottery_pool[idx][j] = address(0);
+                // Transfer the money from the contract to the user
+                payable(msg.sender).transfer(price);
             }
         }
     }
@@ -142,6 +135,7 @@ contract Event {
         require(msg.sender == owner, "Only the contract owner can distribute tickets");
 
         // Distribute the tickets to the users in the lottery pool based on the length of seats
+        uint256 tokenID = 0;
         for (uint256 i = 0; i < seats.length; i++) {
             uint256 offset = seed % lottery_pool[i].length;
             // select seats[i] winners starting from offset in the lottery pool
@@ -152,14 +146,15 @@ contract Event {
                     continue;
                 }
                 if (selected < seats[i]){
-                    uint256 winner_idx = (offset + j) % lottery_pool[i].length;
-                    address winner = lottery_pool[i][winner_idx];
+                    address winner = lottery_pool[i][(offset + j) % lottery_pool[i].length];
                     seat_owners[i][selected] = winner;
                     selected++;
                     int256 new_reputation_score = userController.get_user_reputation_score(winner) + 5;
                     userController.update_reputation_score(winner, new_reputation_score);
-                    userController.add_user_ticket(winner, seat_owners[i][selected]);
-                    ticketContract.transferTicketOwnership(i, winner); //addition
+                    ticketContract.mint(winner, tokenID, name, prices[i], address(this));
+                    userController.add_user_ticket(winner, address(ticketContract), tokenID);
+                    // ticketContract.transferTicketOwnership(i, winner); //addition
+                    tokenID++;
                 }else{
                     if (lottery_pool[i][j] != address(0)) {
                         uint256 price = prices[i];

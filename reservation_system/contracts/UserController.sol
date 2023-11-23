@@ -21,7 +21,7 @@ contract UserController {
         return User(wallet_to_user[user]).get_reputation_score();
     }
 
-    function get_user_tickets(address user) public view is_resgistered(user) returns(address[] memory ) {
+    function get_user_tickets(address user) public view is_resgistered(user) returns(TicketShort[] memory ) {
         return User(wallet_to_user[user]).get_tickets();
     }
 
@@ -29,16 +29,16 @@ contract UserController {
         return User(wallet_to_user[user]).get_events();
     }
 
-    function add_user_ticket(address user, address ticket) public is_resgistered(user) {
-        User(wallet_to_user[user]).add_ticket(ticket);
+    function add_user_ticket(address user, address nft, uint256 tokenID) public is_resgistered(user) {
+        User(wallet_to_user[user]).add_ticket(nft, tokenID);
     }
 
     function add_user_event(address user, address event1) public is_resgistered(user) {
         User(wallet_to_user[user]).add_event(event1);
     }
 
-    function delete_user_ticket(address user, address ticket) public is_resgistered(user) {
-        User(wallet_to_user[user]).delete_ticket(ticket);
+    function delete_user_ticket(address user, address nft, uint256 tokenID) public is_resgistered(user) {
+        User(wallet_to_user[user]).delete_ticket(nft, tokenID);
     }
 
     function delete_user_event(address user, address event1) public is_resgistered(user) {
