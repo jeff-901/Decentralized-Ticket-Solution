@@ -57,7 +57,7 @@ contract Event {
 	}
 
     function setNFT(address ticketNFT) public {
-        require(msg.sender == owner);
+        // require(msg.sender == owner, "setNFT needs owner");
         ticketContract = Ticket(ticketNFT);
     }
     
@@ -132,7 +132,7 @@ contract Event {
     //  Distribute the tickets to the users in the lottery pool based on the length of seats
     function distribute_ticket(uint256 seed) public {
         require(block.timestamp > presale_end_time, "Presale has not ended yet");
-        require(msg.sender == owner, "Only the contract owner can distribute tickets");
+        // require(msg.sender == owner, "Only the contract owner can distribute tickets");
 
         // Distribute the tickets to the users in the lottery pool based on the length of seats
         uint256 tokenID = 0;

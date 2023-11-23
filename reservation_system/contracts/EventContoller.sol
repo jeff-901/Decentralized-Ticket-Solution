@@ -30,17 +30,15 @@ contract EventController {
         uint256 _event_start_time,
         uint256 _event_end_time
     ) public {
-        {
-            userController.get_user_contract_address(msg.sender);
-        }
-
+        userController.get_user_contract_address(msg.sender);
         Event eventInstance = new Event(owner, _name, _description, _link, _seats, _prices, _presale_start_time, _presale_end_time, _event_start_time, _event_end_time, address(userController));
         events.push(eventInstance);
         address event_address = address(eventInstance);
+        emit OnEventCreated(event_address);
         address ticketNFT = ticketController.createTicket(_name, _link, event_address);
         eventInstance.setNFT(ticketNFT);
         userController.add_user_event(msg.sender, event_address);
-        emit OnEventCreated(event_address);
+        
     }
 
     function getEvent(address payable eventAddress) external view returns (Event) {

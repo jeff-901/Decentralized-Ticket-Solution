@@ -7,6 +7,6 @@ contract TicketController{
     function createTicket (string memory name, string memory symbol, address initialOwner)
     public returns (address)
     {
-        return address(new Ticket(name, symbol, address(this)));
+        return address(new Ticket(name, symbol, initialOwner));
     }
 }

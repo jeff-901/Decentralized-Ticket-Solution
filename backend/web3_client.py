@@ -13,14 +13,14 @@ class Client:
         ) as f:
             contract_abi = json.load(f)["abi"]
         self.user_controller_contract = self.web3.eth.contract(
-            address="0xC4b8F72Be6Fa9c1f06D26be23770144A543fb504", abi=contract_abi
+            address="0x3226AE4847599253a1da3D5879142d392334ACDD", abi=contract_abi
         )
         with open(
             "../reservation_system/build/contracts/EventController.json", "r"
         ) as f:
             contract_abi = json.load(f)["abi"]
         self.event_controller_contract = self.web3.eth.contract(
-            address="0x07715E801BDbe492761796B6E3DC2bbc200925a4", abi=contract_abi
+            address="0x7F0fe144863603f0120BF4498dff6e8B1CDBdBFD", abi=contract_abi
         )
         with open("../reservation_system/build/contracts/Event.json", "r") as f:
             self.event_abi = json.load(f)["abi"]
@@ -126,15 +126,19 @@ class Client:
         print(f"Transaction sent: {transaction_hash.hex()}")
         self.web3.eth.wait_for_transaction_receipt(transaction_hash)
         receipt = self.web3.eth.get_transaction_receipt(transaction_hash)
-        if receipt and 'status' in receipt:
-            if receipt['status'] == 1:
+        if receipt and "status" in receipt:
+            if receipt["status"] == 1:
                 print("Transaction succeeded!")
+
                 for log in receipt["logs"]:
-                    event = self.event_controller_contract.events.OnEventCreated().process_log(
-                        log
-                    )
+                    try:
+                        event = self.event_controller_contract.events.OnEventCreated().process_log(
+                            log
+                        )
+                    except:
+                        pass
                 return event["args"][""]
-            elif receipt['status'] == 0:
+            elif receipt["status"] == 0:
                 print("Transaction failed!")
             else:
                 print("Unknown transaction status")
@@ -170,10 +174,10 @@ class Client:
         print(f"Transaction sent: {transaction_hash.hex()}")
         self.web3.eth.wait_for_transaction_receipt(transaction_hash)
         receipt = self.web3.eth.get_transaction_receipt(transaction_hash)
-        if receipt and 'status' in receipt:
-            if receipt['status'] == 1:
+        if receipt and "status" in receipt:
+            if receipt["status"] == 1:
                 print("Transaction succeeded!")
-            elif receipt['status'] == 0:
+            elif receipt["status"] == 0:
                 print("Transaction failed!")
             else:
                 print("Unknown transaction status")
@@ -220,3 +224,33 @@ class Client:
         print(f"Transaction sent: {transaction_hash.hex()}")
         self.web3.eth.wait_for_transaction_receipt(transaction_hash)
 
+    def distribute_ticket(self, event_address, seed, gas=10000000):
+        event_contract = self.web3.eth.contract(
+            address=event_address, abi=self.event_abi
+        )
+        transaction = event_contract.functions.distribute_ticket(
+            seed
+        ).build_transaction(
+            {
+                "from": self.wallet_address,
+                "gas": gas,
+                "gasPrice": self.web3.eth.gas_price,
+                "nonce": self.web3.eth.get_transaction_count(self.wallet_address),
+            }
+        )
+        signed_transaction = self.web3.eth.account.sign_transaction(
+            transaction, self.private_key
+        )
+        transaction_hash = self.web3.eth.send_raw_transaction(
+            signed_transaction.rawTransaction
+        )
+        print(f"Transaction sent: {transaction_hash.hex()}")
+        self.web3.eth.wait_for_transaction_receipt(transaction_hash)
+        receipt = self.web3.eth.get_transaction_receipt(transaction_hash)
+        if receipt and "status" in receipt:
+            if receipt["status"] == 1:
+                print("Transaction succeeded!")
+            elif receipt["status"] == 0:
+                print("Transaction failed!")
+            else:
+                print("Unknown transaction status")
