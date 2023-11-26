@@ -42,3 +42,4 @@ while time.time() <= start + 60:
 print("Before withdraw:", c.web3.eth.get_balance(c.wallet_address))
 c.withdraw_profit(event, WALLET)
 print("After withdraw:", c.web3.eth.get_balance(c.wallet_address))
+print(c.get_owner(event, 0))

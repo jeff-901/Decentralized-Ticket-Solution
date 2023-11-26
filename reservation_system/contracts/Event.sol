@@ -2,9 +2,7 @@ pragma solidity >=0.8.0;
 
 import "./UserController.sol";
 import "./Ticket.sol";
-// interface TicketController{
-//     function createTicket (string memory name, string memory symbol, address initialOwner) external returns (address);
-// }
+
 contract Event {
     event OnTicketPurchased(address buyer, uint256 price);
 
@@ -38,7 +36,6 @@ contract Event {
         address _userController
     ) {
         userController = UserController(_userController);
-
         owner = _owner;
 		name = _name;
         description = _description;
@@ -165,5 +162,9 @@ contract Event {
                 j++;
             }
         }
+    }
+
+    function getOwner(uint256 tokenId) public view returns (address) {
+        return ticketContract.ownerOf(tokenId);
     }
 }

@@ -13,14 +13,14 @@ class Client:
         ) as f:
             contract_abi = json.load(f)["abi"]
         self.user_controller_contract = self.web3.eth.contract(
-            address="0x3226AE4847599253a1da3D5879142d392334ACDD", abi=contract_abi
+            address="0x2ebD628a4A989fFddE3430EEC52E1686c92b2278", abi=contract_abi
         )
         with open(
             "../reservation_system/build/contracts/EventController.json", "r"
         ) as f:
             contract_abi = json.load(f)["abi"]
         self.event_controller_contract = self.web3.eth.contract(
-            address="0x7F0fe144863603f0120BF4498dff6e8B1CDBdBFD", abi=contract_abi
+            address="0x637aa26bB37FfC4dfD19b64e81df659229b79C55", abi=contract_abi
         )
         with open("../reservation_system/build/contracts/Event.json", "r") as f:
             self.event_abi = json.load(f)["abi"]
@@ -254,3 +254,14 @@ class Client:
                 print("Transaction failed!")
             else:
                 print("Unknown transaction status")
+
+    def get_owner(self, event_address, token_id):
+        try:
+            event_contract = self.web3.eth.contract(
+                address=event_address, abi=self.event_abi
+            )
+            result = event_contract.functions.getOwner(token_id).call()
+            # print(f"Current events: {result}")
+            return result
+        except Exception as e:
+            print(f"Error calling getEvents: {e}")
