@@ -43,18 +43,18 @@ class Server:
                 return "No wallet address"
             if (event_id, token_id) in cache:
                 return "Already used"
-            # result = self.user_controller_contract.functions.get_user_tickets(
-            #     wallet_address
-            # ).call()
+            result = self.user_controller_contract.functions.get_user_tickets(
+                wallet_address
+            ).call()
             # print(result)
-            # if (event_id, token_id) not in result:
-                # return "You do not own this ticket"
+            if (event_id, token_id) not in result:
+                return "You do not own this ticket"
             event_contract = self.web3.eth.contract(
                 address=event_id, abi=self.event_abi
             )
             try:
                 result = event_contract.functions.getOwner(token_id).call()
-                print(result)
+                # print(result)
                 if result != wallet_address:
                     return "You do not own this ticket"
             except Exception as e:
