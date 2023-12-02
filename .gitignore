@@ -2,4 +2,6 @@ node_modules
 .env
 build
 .DS_Store
+.json
+.jpg
 __pycache__

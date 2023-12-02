@@ -13,14 +13,14 @@ class Client:
         ) as f:
             contract_abi = json.load(f)["abi"]
         self.user_controller_contract = self.web3.eth.contract(
-            address="0x2ebD628a4A989fFddE3430EEC52E1686c92b2278", abi=contract_abi
+            address="0x98a8fC7E90b4F395beBEbEE831eFdffC56089975", abi=contract_abi
         )
         with open(
             "../reservation_system/build/contracts/EventController.json", "r"
         ) as f:
             contract_abi = json.load(f)["abi"]
         self.event_controller_contract = self.web3.eth.contract(
-            address="0x637aa26bB37FfC4dfD19b64e81df659229b79C55", abi=contract_abi
+            address="0x2674a0D2ad9B683E4915ffd62D83A8411d7dbfB4", abi=contract_abi
         )
         with open("../reservation_system/build/contracts/Event.json", "r") as f:
             self.event_abi = json.load(f)["abi"]

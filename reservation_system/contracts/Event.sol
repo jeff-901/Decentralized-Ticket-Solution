@@ -7,6 +7,7 @@ contract Event {
     event OnTicketPurchased(address buyer, uint256 price);
 
     UserController public userController;
+    address event_controller;
     Ticket public ticketContract;
 
     address public owner;
@@ -37,6 +38,7 @@ contract Event {
     ) {
         userController = UserController(_userController);
         owner = _owner;
+        event_controller = msg.sender;
 		name = _name;
         description = _description;
         link = _link;
@@ -54,7 +56,7 @@ contract Event {
 	}
 
     function setNFT(address ticketNFT) public {
-        // require(msg.sender == owner, "setNFT needs owner");
+        require(msg.sender == event_controller, "setNFT needs event controller");
         ticketContract = Ticket(ticketNFT);
     }
     
@@ -71,14 +73,6 @@ contract Event {
         require(target < prices.length, "price not found");
         return target;
     }
-
-    // Check if the specified ticket seat is owned by a given user
-    // function check_ticket_ownership(uint256 seatNumber, uint256 price, address user) public view returns (bool) {
-    //     uint256 idx = price_to_idx(price);
-    //     require(seatNumber < seats[idx], "Seat does not exist");
-    //     require(seat_owners[idx][seatNumber] != address(0), "Seat is not owned");
-    //     return seat_owners[idx][seatNumber] == user;
-    // }
 
 	// Check if a user has sufficient funds to buy a ticket
 	function check_balance(uint256 price, address user) public view returns (bool) {
@@ -149,7 +143,7 @@ contract Event {
                     int256 new_reputation_score = userController.get_user_reputation_score(winner) + 5;
                     userController.update_reputation_score(winner, new_reputation_score);
                     ticketContract.mint(winner, tokenID, name, prices[i], address(this));
-                    userController.add_user_ticket(winner, address(ticketContract), tokenID);
+                    userController.add_user_ticket(winner, address(this), tokenID);
                     // ticketContract.transferTicketOwnership(i, winner); //addition
                     tokenID++;
                 }else{

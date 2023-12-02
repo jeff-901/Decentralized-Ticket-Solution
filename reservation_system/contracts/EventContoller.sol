@@ -31,7 +31,7 @@ contract EventController {
         uint256 _event_end_time
     ) public {
         userController.get_user_contract_address(msg.sender);
-        Event eventInstance = new Event(owner, _name, _description, _link, _seats, _prices, _presale_start_time, _presale_end_time, _event_start_time, _event_end_time, address(userController));
+        Event eventInstance = new Event(msg.sender, _name, _description, _link, _seats, _prices, _presale_start_time, _presale_end_time, _event_start_time, _event_end_time, address(userController));
         events.push(eventInstance);
         address event_address = address(eventInstance);
         emit OnEventCreated(event_address);

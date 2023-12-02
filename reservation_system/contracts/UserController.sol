@@ -25,20 +25,24 @@ contract UserController {
         return User(wallet_to_user[user]).get_tickets();
     }
 
+    function check_user_tickets(address user, address event_id, uint256 tokenId) public view is_resgistered(user) returns(bool) {
+        return User(wallet_to_user[user]).check_ticket(event_id, tokenId);
+    }
+
     function get_user_events(address user) public view is_resgistered(user) returns(address[] memory) {
         return User(wallet_to_user[user]).get_events();
     }
 
-    function add_user_ticket(address user, address nft, uint256 tokenID) public is_resgistered(user) {
-        User(wallet_to_user[user]).add_ticket(nft, tokenID);
+    function add_user_ticket(address user, address event_id, uint256 tokenId) public is_resgistered(user) {
+        User(wallet_to_user[user]).add_ticket(event_id, tokenId);
     }
 
     function add_user_event(address user, address event1) public is_resgistered(user) {
         User(wallet_to_user[user]).add_event(event1);
     }
 
-    function delete_user_ticket(address user, address nft, uint256 tokenID) public is_resgistered(user) {
-        User(wallet_to_user[user]).delete_ticket(nft, tokenID);
+    function delete_user_ticket(address user, address event_id, uint256 tokenId) public is_resgistered(user) {
+        User(wallet_to_user[user]).delete_ticket(event_id, tokenId);
     }
 
     function delete_user_event(address user, address event1) public is_resgistered(user) {

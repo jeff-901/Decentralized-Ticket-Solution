@@ -15,29 +15,29 @@ event = c.create_event(
     "none",
     "no link",
     [1],
-    [10**17],
+    [10**16],
     start,
-    start + 45,
-    start + 59,
     start + 60,
+    start + 61,
+    start + 62,
 )
 print("create event:", event)
 if event == "":
     exit(1)
-events = c.list_events()
-print("Events:", events)
-print("User events:", c.get_user_events())
+# events = c.list_events()
+# print("Events:", events)
+# print("User events:", c.get_user_events())
 
 print("Before register:", c.web3.eth.get_balance(c.wallet_address))
-c.register_lottery(event, 10**17)
+c.register_lottery(event, 10**16)
 print("After register:", c.web3.eth.get_balance(c.wallet_address))
 # c.cancel_registration(event)
 # print("After cancel registration:", c.web3.eth.get_balance(c.wallet_address))
-while time.time() <= start + 45:
+while time.time() <= start + 60:
     time.sleep(1)
 c.distribute_ticket(event, 0)
 print("User tickets:", c.get_user_tickets())
-while time.time() <= start + 60:
+while time.time() <= start + 62:
     time.sleep(1)
 print("Before withdraw:", c.web3.eth.get_balance(c.wallet_address))
 c.withdraw_profit(event, WALLET)
