@@ -1,7 +1,7 @@
 pragma solidity >=0.8.0;
 struct TicketShort {
-    address nft;
-    uint256 tokenID;
+    address event_id;
+    uint256 tokenId;
 }
 
 contract User {
@@ -41,15 +41,26 @@ contract User {
         return tickets;
     }
 
-    function add_ticket(address nft, uint256 tokenID) public {
-        tickets.push(TicketShort(nft, tokenID));
+    function check_ticket(address event_id, uint256 tokenId) public view returns (bool){
+        require(msg.sender == user_controller || msg.sender == original_user_wallet);
+        bool found = false;
+        for (uint idx = 0; idx < tickets.length; idx++){
+            if ((tickets[idx].event_id == event_id) && (tickets[idx].tokenId == tokenId)) {
+                return true;
+            }
+        }
+        return found;
+    }
+
+    function add_ticket(address event_id, uint256 tokenId) public {
+        tickets.push(TicketShort(event_id, tokenId));
         amount_tickets += 1;
     }
 
-    function delete_ticket(address nft, uint256 tokenID) public {
+    function delete_ticket(address event_id, uint256 tokenId) public {
         for(uint256 idx = 0; idx < amount_tickets; idx++) {
-            if ((tickets[idx].nft == nft) && (tickets[idx].tokenID == tokenID)) {
-                tickets[idx].nft = address(0);
+            if ((tickets[idx].event_id == event_id) && (tickets[idx].tokenId == tokenId)) {
+                tickets[idx].event_id = address(0);
             }
         }
     }
